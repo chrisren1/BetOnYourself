@@ -33,6 +33,7 @@ function formatShortDate(dateStr: string): string {
 }
 
 const DURATION_PRESETS = [
+  { label: "Today", days: 0 },
   { label: "3 days", days: 3 },
   { label: "End of week", days: daysUntilEndOfWeek() },
   { label: "1 week", days: 7 },
@@ -52,6 +53,14 @@ export default function NewBetPage() {
   const [targetCheckins, setTargetCheckins] = useState(4);
   const [duration, setDuration] = useState(7);
   const [goalType, setGoalType] = useState<GoalType>("at_least");
+
+  // Check-ins are capped at one per day, so the target can never exceed the
+  // number of days in the bet — otherwise it'd be mathematically unwinnable
+  // (e.g. a same-day bet with a target of 4 check-ins).
+  function applyDuration(days: number) {
+    setDuration(days);
+    setTargetCheckins((prev) => Math.max(1, Math.min(prev, days + 1)));
+  }
 
   function applyQuickBet(qb: typeof QUICK_BETS[0]) {
     setTitle(qb.title);
@@ -209,10 +218,10 @@ export default function NewBetPage() {
             <label className="block text-xs text-zinc-400 font-medium mb-1.5">Duration (days)</label>
             <input
               type="number"
-              min={1}
+              min={0}
               max={365}
               value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
+              onChange={(e) => applyDuration(Number(e.target.value))}
               className="w-full bg-zinc-900 border border-zinc-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors"
             />
             <div className="flex gap-1.5 flex-wrap mt-2">
@@ -220,7 +229,7 @@ export default function NewBetPage() {
                 <button
                   key={p.label}
                   type="button"
-                  onClick={() => setDuration(p.days)}
+                  onClick={() => applyDuration(p.days)}
                   className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                     duration === p.days
                       ? "bg-zinc-800 border-amber-500 text-amber-400"
@@ -264,7 +273,8 @@ export default function NewBetPage() {
               <div>
                 <div className="font-semibold text-sm">{title || "Your bet"}</div>
                 <div className="text-xs text-zinc-500">
-                  {goalType === "at_most" ? `${targetCheckins}x or less` : `${targetCheckins}x+`} in {duration} days
+                  {goalType === "at_most" ? `${targetCheckins}x or less` : `${targetCheckins}x+`}{" "}
+                  {duration === 0 ? "today" : `in ${duration} day${duration === 1 ? "" : "s"}`}
                 </div>
               </div>
             </div>
