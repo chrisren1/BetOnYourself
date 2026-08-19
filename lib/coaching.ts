@@ -1,4 +1,4 @@
-import { Bet, BankrollHistory } from "./types";
+import { Bet, BankrollHistory, BetCategory } from "./types";
 
 // Generates AI-style coaching summaries from bet data.
 // To upgrade to real Claude AI: set ANTHROPIC_API_KEY in .env.local
@@ -93,4 +93,78 @@ export function getWinRate(history: BankrollHistory[]): number {
   if (settled.length === 0) return 0;
   const wins = settled.filter((h) => h.change > 0).length;
   return wins / settled.length;
+}
+
+// "positive" = things are trending well right now (on pace, just checked
+// in, staying under a limit). "corrective" = behind pace, over a limit, or
+// settled as a loss — still supportive, but pointed at what's next.
+const CATEGORY_INSIGHT: Record<BetCategory, { positive: string; corrective: string }> = {
+  fitness: {
+    positive: "Consistent training compounds — better sleep, sharper mood, more energy carrying into everything else you do this week.",
+    corrective: "Missed sessions are normal, but momentum is the whole game with fitness. One rep today beats a perfect plan you never start.",
+  },
+  sleep: {
+    positive: "Good sleep isn't just rest — it's when your body actually recovers and your brain consolidates the day. This is compounding in your favor.",
+    corrective: "Sleep debt stacks fast and doesn't forgive easily. Tonight's a good night to protect the window you promised yourself.",
+  },
+  food: {
+    positive: "Cooking at home means you control what's actually going into your body — that adds up in ways the scale won't show for weeks.",
+    corrective: "Every home-cooked meal from here still counts. The target doesn't care about the meals you've already missed, only what's next.",
+  },
+  work: {
+    positive: "Deep work sessions compound into real output. This is the difference between people who plan and people who ship.",
+    corrective: "Focus is a muscle — it's harder to start after a gap, but that's exactly when showing up matters most.",
+  },
+  social: {
+    positive: "Fewer nights drinking means better sleep, sharper mornings, and a bankroll that isn't quietly leaking cash at the bar.",
+    corrective: "One night off-plan doesn't erase the bet — it just raises the stakes on the nights that are left.",
+  },
+  other: {
+    positive: "Consistency on small commitments is what builds trust with yourself. That trust is the actual prize here, not just the stake.",
+    corrective: "Progress isn't linear. What matters is what you do with the days you've got left.",
+  },
+};
+
+type BetCoachInput = {
+  bet: Pick<Bet, "title" | "category" | "goal_type" | "target_checkins" | "stake" | "status">;
+  checkinCount: number;
+  checkedInToday: boolean;
+  overLimit: boolean;
+  isPastEndDate: boolean;
+};
+
+export function generateBetCoachMessage(input: BetCoachInput): string {
+  const { bet, checkinCount, checkedInToday, overLimit, isPastEndDate } = input;
+  const isAtMost = bet.goal_type === "at_most";
+  const insight = CATEGORY_INSIGHT[bet.category] ?? CATEGORY_INSIGHT.other;
+  const remaining = Math.max(bet.target_checkins - checkinCount, 0);
+
+  if (bet.status === "won") {
+    return `You hit it — "${bet.title}" is a win. ${insight.positive} That's +$${bet.stake.toLocaleString()} in the bank because you followed through.`;
+  }
+
+  if (bet.status === "lost") {
+    return `This one didn't land. ${insight.corrective} The stake's gone, but the next bet is a clean slate — what matters is you keep betting on yourself.`;
+  }
+
+  if (isAtMost) {
+    if (overLimit) {
+      return `You've gone over the limit on "${bet.title}" — this one's headed for a loss. ${insight.corrective}`;
+    }
+    if (checkedInToday) {
+      return `Logged for today — that's ${checkinCount}/${bet.target_checkins} used, so the margin's tighter now. ${insight.corrective}`;
+    }
+    return `Clean so far — ${checkinCount}/${bet.target_checkins} used on "${bet.title}". ${insight.positive}`;
+  }
+
+  if (checkedInToday) {
+    return `Checked in — ${checkinCount}/${bet.target_checkins} on "${bet.title}". ${insight.positive}`;
+  }
+  if (checkinCount >= bet.target_checkins) {
+    return `Target already hit at ${checkinCount}/${bet.target_checkins}. ${insight.positive} Settle it whenever you're ready to lock in the win.`;
+  }
+  if (isPastEndDate) {
+    return `Time's up on this one. ${insight.corrective}`;
+  }
+  return `${remaining} more to go on "${bet.title}". ${insight.corrective}`;
 }

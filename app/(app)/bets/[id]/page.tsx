@@ -3,8 +3,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import CheckInButton from "./CheckInButton";
 import SettleButton from "./SettleButton";
-import { ArrowLeft, CheckCircle, Circle, Calendar, Target, Trophy, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Circle, Calendar, Target, Trophy, XCircle, Bot } from "lucide-react";
 import { Bet, Checkin, CATEGORY_CONFIG } from "@/lib/types";
+import { generateBetCoachMessage } from "@/lib/coaching";
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -66,6 +67,13 @@ export default async function BetDetailPage({ params }: { params: { id: string }
 
   const sc = statusConfig[bet.status as keyof typeof statusConfig];
   const cat = CATEGORY_CONFIG[bet.category as keyof typeof CATEGORY_CONFIG];
+  const coachMessage = generateBetCoachMessage({
+    bet,
+    checkinCount,
+    checkedInToday,
+    overLimit,
+    isPastEndDate,
+  });
 
   return (
     <div className="max-w-2xl mx-auto px-4 pt-20 pb-24">
@@ -140,6 +148,19 @@ export default async function BetDetailPage({ params }: { params: { id: string }
                 : `${(bet as Bet).target_checkins - checkinCount} left before you lose`
               : `${progressPct}% complete`}
           </span>
+        </div>
+      </div>
+
+      {/* AI Coach */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-5">
+        <div className="flex items-start gap-3">
+          <div className="w-7 h-7 rounded-full bg-amber-500/15 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+            <Bot className="w-4 h-4 text-amber-400" />
+          </div>
+          <div>
+            <div className="text-xs text-amber-400 font-semibold mb-1.5">Coach</div>
+            <p className="text-sm text-zinc-300 leading-relaxed">{coachMessage}</p>
+          </div>
         </div>
       </div>
 
