@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import CheckInButton from "./CheckInButton";
 import SettleButton from "./SettleButton";
 import { ArrowLeft, CheckCircle, Circle, Calendar, Target, Trophy, XCircle } from "lucide-react";
-import { Bet, Checkin } from "@/lib/types";
+import { Bet, Checkin, CATEGORY_CONFIG } from "@/lib/types";
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -60,11 +60,12 @@ export default async function BetDetailPage({ params }: { params: { id: string }
 
   const statusConfig = {
     active: { color: "text-amber-400", label: "Active" },
-    won: { color: "text-green-400", label: "Won" },
+    won: { color: "text-emerald-400", label: "Won" },
     lost: { color: "text-red-400", label: "Lost" },
   };
 
   const sc = statusConfig[bet.status as keyof typeof statusConfig];
+  const cat = CATEGORY_CONFIG[bet.category as keyof typeof CATEGORY_CONFIG];
 
   return (
     <div className="max-w-2xl mx-auto px-4 pt-20 pb-24">
@@ -81,7 +82,9 @@ export default async function BetDetailPage({ params }: { params: { id: string }
       <div className="mt-4 mb-6">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
-            <span className="text-4xl">{bet.emoji}</span>
+            <span className={`w-14 h-14 shrink-0 rounded-2xl border flex items-center justify-center text-3xl ${cat.badge}`}>
+              {bet.emoji}
+            </span>
             <div>
               <h1 className="font-black text-xl leading-tight">{bet.title}</h1>
               {bet.description && (
@@ -104,18 +107,22 @@ export default async function BetDetailPage({ params }: { params: { id: string }
             <Target className="w-4 h-4 text-zinc-400" />
             <span className="text-sm font-medium">{isAtMost ? "Usage" : "Progress"}</span>
           </div>
-          <span className={`text-sm font-bold ${overLimit ? "text-red-400" : "text-amber-400"}`}>
+          <span className={`text-sm font-bold ${overLimit ? "text-red-400" : isAtMost ? "text-orange-400" : "text-emerald-400"}`}>
             {checkinCount}/{(bet as Bet).target_checkins}{isAtMost ? " max" : ""}
           </span>
         </div>
         <div className="h-3 bg-zinc-800 rounded-full overflow-hidden mb-2">
           <div
             className={`h-full rounded-full transition-all ${
-              bet.status === "won" ? "bg-green-500" :
-              bet.status === "lost" ? "bg-red-500" :
+              bet.status === "won" ? "bg-gradient-to-r from-emerald-500 to-emerald-400" :
+              bet.status === "lost" ? "bg-gradient-to-r from-red-600 to-red-500" :
               isAtMost
-                ? overLimit ? "bg-red-500" : progressPct >= 75 ? "bg-amber-500" : "bg-green-500"
-                : progressPct >= 75 ? "bg-green-500" :
+                ? overLimit
+                  ? "bg-gradient-to-r from-red-600 to-red-500"
+                  : progressPct >= 60
+                  ? "bg-gradient-to-r from-orange-600 to-orange-500"
+                  : "bg-gradient-to-r from-orange-500 to-orange-400"
+                : progressPct >= 75 ? "bg-gradient-to-r from-emerald-500 to-emerald-400" :
                   progressPct >= 40 ? "bg-amber-500" : "bg-zinc-600"
             }`}
             style={{ width: `${progressPct}%` }}
@@ -160,17 +167,17 @@ export default async function BetDetailPage({ params }: { params: { id: string }
       {(bet.status === "won" || bet.status === "lost") && (
         <div className={`rounded-2xl p-5 mb-5 border ${
           bet.status === "won"
-            ? "bg-green-500/10 border-green-500/30"
+            ? "bg-emerald-500/10 border-emerald-500/30"
             : "bg-red-500/10 border-red-500/30"
         }`}>
           <div className="flex items-center gap-3">
             {bet.status === "won" ? (
-              <Trophy className="w-6 h-6 text-green-400" />
+              <Trophy className="w-6 h-6 text-emerald-400" />
             ) : (
               <XCircle className="w-6 h-6 text-red-400" />
             )}
             <div>
-              <div className={`font-bold ${bet.status === "won" ? "text-green-400" : "text-red-400"}`}>
+              <div className={`font-bold ${bet.status === "won" ? "text-emerald-400" : "text-red-400"}`}>
                 {bet.status === "won" ? `You won $${(bet as Bet).stake.toLocaleString()}!` : `You lost $${(bet as Bet).stake.toLocaleString()}`}
               </div>
               <div className="text-xs text-zinc-400 mt-0.5">
@@ -191,9 +198,9 @@ export default async function BetDetailPage({ params }: { params: { id: string }
             const done = checkinDates.has(date);
             const isToday = date === today;
             const doneClass = isAtMost
-              ? "bg-red-500/20 border border-red-500/30"
-              : "bg-green-500/20 border border-green-500/30";
-            const doneIconClass = isAtMost ? "text-red-400" : "text-green-400";
+              ? "bg-orange-500/20 border border-orange-500/30"
+              : "bg-emerald-500/20 border border-emerald-500/30";
+            const doneIconClass = isAtMost ? "text-orange-400" : "text-emerald-400";
             return (
               <div
                 key={date}
@@ -227,7 +234,7 @@ export default async function BetDetailPage({ params }: { params: { id: string }
         </div>
         <div className="flex items-center gap-4 mt-4 text-xs text-zinc-500">
           <div className="flex items-center gap-1.5">
-            <div className={`w-3 h-3 rounded ${isAtMost ? "bg-red-500/20 border border-red-500/30" : "bg-green-500/20 border border-green-500/30"}`} />
+            <div className={`w-3 h-3 rounded ${isAtMost ? "bg-orange-500/20 border border-orange-500/30" : "bg-emerald-500/20 border border-emerald-500/30"}`} />
             <span>{isAtMost ? "Logged" : "Checked in"}</span>
           </div>
           <div className="flex items-center gap-1.5">

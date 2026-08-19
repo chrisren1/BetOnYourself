@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bet } from "@/lib/types";
+import { Bet, CATEGORY_CONFIG } from "@/lib/types";
 import { CheckCircle, Clock, ChevronRight } from "lucide-react";
 
 function daysLeft(endDate: string): number {
@@ -39,13 +39,16 @@ export default function BetCard({ bet }: { bet: Bet }) {
   };
 
   const badge = badgeConfig[bet.status];
+  const cat = CATEGORY_CONFIG[bet.category];
 
   return (
     <Link href={`/bets/${bet.id}`}>
       <div className={`bet-card bg-zinc-900 border ${statusColors[bet.status]} rounded-2xl p-4 cursor-pointer`}>
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-start gap-3">
-            <span className="text-2xl">{bet.emoji}</span>
+            <span className={`w-10 h-10 shrink-0 rounded-xl border flex items-center justify-center text-lg ${cat.badge}`}>
+              {bet.emoji}
+            </span>
             <div>
               <div className="font-semibold text-sm text-zinc-100 leading-tight">{bet.title}</div>
               {bet.description && (
@@ -75,17 +78,17 @@ export default function BetCard({ bet }: { bet: Bet }) {
             <div
               className={`h-full rounded-full transition-all ${
                 bet.status === "won"
-                  ? "bg-green-500"
+                  ? "bg-gradient-to-r from-emerald-500 to-emerald-400"
                   : bet.status === "lost"
-                  ? "bg-red-500"
+                  ? "bg-gradient-to-r from-red-600 to-red-500"
                   : isAtMost
                   ? overLimit
-                    ? "bg-red-500"
-                    : progressPct >= 75
-                    ? "bg-amber-500"
-                    : "bg-green-500"
+                    ? "bg-gradient-to-r from-red-600 to-red-500"
+                    : progressPct >= 60
+                    ? "bg-gradient-to-r from-orange-600 to-orange-500"
+                    : "bg-gradient-to-r from-orange-500 to-orange-400"
                   : progressPct >= 75
-                  ? "bg-green-500"
+                  ? "bg-gradient-to-r from-emerald-500 to-emerald-400"
                   : progressPct >= 40
                   ? "bg-amber-500"
                   : "bg-zinc-600"

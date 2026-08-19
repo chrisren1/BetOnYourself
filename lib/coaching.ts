@@ -13,7 +13,7 @@ type CoachingInput = {
 };
 
 export function generateCoachingSummary(input: CoachingInput): string {
-  const { username, bankroll, activeBets, winRate } = input;
+  const { username, bankroll, activeBets, recentHistory, winRate } = input;
   const name = username ?? "champ";
   const pct = Math.round(winRate * 100);
   const startingBankroll = 10000;
@@ -31,6 +31,29 @@ export function generateCoachingSummary(input: CoachingInput): string {
 
   const lagging = activeSummaries.filter((b) => b.pctDone < 50);
   const crushing = activeSummaries.filter((b) => b.pctDone >= 75);
+
+  // Nothing settled yet — a "0% win rate" stat is just noise for a brand
+  // new account. Welcome them and point at what they've already committed to.
+  const hasSettledHistory = recentHistory.some((h) => h.change !== 0);
+  if (!hasSettledHistory) {
+    if (activeBets.length === 0) {
+      return `Welcome, ${name}! You're starting with a $${startingBankroll.toLocaleString()} bankroll. Place your first bet on yourself — the only way to lose is to not show up.`;
+    }
+
+    const betList = activeSummaries.map((b) => `${b.emoji} ${b.title}`).join(" and ");
+    const plural = activeBets.length === 1 ? "bet" : "bets";
+    let msg = `Welcome, ${name}! You've got ${activeBets.length} ${plural} live — ${betList}. `;
+
+    if (crushing.length > 0) {
+      msg += `Off to a strong start on ${crushing.map((b) => `${b.emoji} ${b.title}`).join(" and ")}. `;
+    }
+    if (lagging.length > 0) {
+      msg += `Keep an eye on ${lagging.map((b) => `${b.emoji} ${b.title}`).join(" and ")} — early days, so there's time to catch up. `;
+    }
+    msg += `Check in daily and prove it.`;
+
+    return msg.trim();
+  }
 
   let msg = "";
 

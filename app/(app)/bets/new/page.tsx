@@ -116,7 +116,7 @@ export default function NewBetPage() {
                 onClick={() => { setCategory(cat); setEmoji(cfg.emoji); }}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
                   category === cat
-                    ? "bg-zinc-800 border-amber-500 text-amber-400"
+                    ? `${cfg.badge} ${cfg.color}`
                     : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700"
                 }`}
               >
@@ -165,7 +165,9 @@ export default function NewBetPage() {
                 onClick={() => setGoalType(opt.value)}
                 className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   goalType === opt.value
-                    ? "bg-zinc-800 text-amber-400"
+                    ? opt.value === "at_most"
+                      ? "bg-orange-500/15 text-orange-400"
+                      : "bg-emerald-500/15 text-emerald-400"
                     : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >

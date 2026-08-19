@@ -55,12 +55,12 @@ export type BankrollHistory = {
 
 export const CATEGORY_CONFIG: Record<
   BetCategory,
-  { label: string; emoji: string; color: string }
+  { label: string; emoji: string; color: string; badge: string; ring: string }
 > = {
-  fitness:  { label: "Fitness",  emoji: "🏋️", color: "text-blue-400"   },
-  sleep:    { label: "Sleep",    emoji: "😴", color: "text-purple-400" },
-  food:     { label: "Food",     emoji: "🍳", color: "text-orange-400" },
-  work:     { label: "Work",     emoji: "💻", color: "text-cyan-400"   },
-  social:   { label: "Social",   emoji: "🍺", color: "text-pink-400"   },
-  other:    { label: "Other",    emoji: "🎯", color: "text-zinc-400"   },
+  fitness:  { label: "Fitness",  emoji: "🏋️", color: "text-blue-400",   badge: "bg-blue-500/15 border-blue-500/30",     ring: "border-blue-500"   },
+  sleep:    { label: "Sleep",    emoji: "😴", color: "text-purple-400", badge: "bg-purple-500/15 border-purple-500/30", ring: "border-purple-500" },
+  food:     { label: "Food",     emoji: "🍳", color: "text-orange-400", badge: "bg-orange-500/15 border-orange-500/30", ring: "border-orange-500" },
+  work:     { label: "Work",     emoji: "💻", color: "text-cyan-400",   badge: "bg-cyan-500/15 border-cyan-500/30",     ring: "border-cyan-500"   },
+  social:   { label: "Social",   emoji: "🍺", color: "text-pink-400",   badge: "bg-pink-500/15 border-pink-500/30",     ring: "border-pink-500"   },
+  other:    { label: "Other",    emoji: "🎯", color: "text-zinc-400",   badge: "bg-zinc-500/15 border-zinc-500/30",     ring: "border-zinc-500"   },
 };
