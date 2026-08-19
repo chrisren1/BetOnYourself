@@ -1,0 +1,215 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createBet } from "@/actions/bets";
+import { BetCategory, CATEGORY_CONFIG } from "@/lib/types";
+
+const QUICK_BETS = [
+  { title: "Go to the gym", category: "fitness" as BetCategory, emoji: "🏋️", target: 4, duration: 7 },
+  { title: "Get 7+ hours of sleep", category: "sleep" as BetCategory, emoji: "😴", target: 5, duration: 7 },
+  { title: "Cook at home", category: "food" as BetCategory, emoji: "🍳", target: 4, duration: 7 },
+  { title: "Deep work sessions", category: "work" as BetCategory, emoji: "💻", target: 5, duration: 7 },
+  { title: "No drinking", category: "social" as BetCategory, emoji: "🚫🍺", target: 7, duration: 7 },
+];
+
+function addDays(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+export default function NewBetPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<BetCategory>("fitness");
+  const [emoji, setEmoji] = useState("🏋️");
+  const [stake, setStake] = useState(300);
+  const [targetCheckins, setTargetCheckins] = useState(4);
+  const [duration, setDuration] = useState(7);
+
+  function applyQuickBet(qb: typeof QUICK_BETS[0]) {
+    setTitle(qb.title);
+    setCategory(qb.category);
+    setEmoji(qb.emoji);
+    setTargetCheckins(qb.target);
+    setDuration(qb.duration);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) return setError("Title is required");
+    setLoading(true);
+    setError(null);
+
+    const result = await createBet({
+      title: title.trim(),
+      description: description.trim() || undefined,
+      category,
+      emoji,
+      stake,
+      target_checkins: targetCheckins,
+      end_date: addDays(duration),
+    });
+
+    setLoading(false);
+    if (result.error) return setError(result.error);
+    router.push("/");
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 pt-20 pb-24">
+      <h1 className="font-black text-2xl mb-1 mt-4">Place a Bet</h1>
+      <p className="text-sm text-zinc-500 mb-6">Make a commitment. Put your bankroll on it.</p>
+
+      {/* Quick-pick templates */}
+      <div className="mb-6">
+        <div className="text-xs text-zinc-500 font-medium uppercase tracking-widest mb-3">Quick Pick</div>
+        <div className="flex gap-2 flex-wrap">
+          {QUICK_BETS.map((qb) => (
+            <button
+              key={qb.title}
+              onClick={() => applyQuickBet(qb)}
+              className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
+            >
+              <span>{qb.emoji}</span>
+              <span>{qb.title}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Category */}
+        <div>
+          <label className="block text-xs text-zinc-400 font-medium mb-2">Category</label>
+          <div className="flex gap-2 flex-wrap">
+            {(Object.entries(CATEGORY_CONFIG) as [BetCategory, typeof CATEGORY_CONFIG[BetCategory]][]).map(([cat, cfg]) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => { setCategory(cat); setEmoji(cfg.emoji); }}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                  category === cat
+                    ? "bg-zinc-800 border-amber-500 text-amber-400"
+                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                }`}
+              >
+                <span>{cfg.emoji}</span>
+                <span>{cfg.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Title */}
+        <div>
+          <label className="block text-xs text-zinc-400 font-medium mb-1.5">What&apos;s the bet?</label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={`e.g. "${QUICK_BETS[0].title}"`}
+            className="w-full bg-zinc-900 border border-zinc-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-3 text-sm placeholder:text-zinc-600 outline-none transition-colors"
+          />
+        </div>
+
+        {/* Description */}
+        <div>
+          <label className="block text-xs text-zinc-400 font-medium mb-1.5">Details (optional)</label>
+          <input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="e.g. At least 45 min sessions"
+            className="w-full bg-zinc-900 border border-zinc-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-3 text-sm placeholder:text-zinc-600 outline-none transition-colors"
+          />
+        </div>
+
+        {/* Target check-ins + Duration */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs text-zinc-400 font-medium mb-1.5">
+              Target check-ins
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={31}
+              value={targetCheckins}
+              onChange={(e) => setTargetCheckins(Number(e.target.value))}
+              className="w-full bg-zinc-900 border border-zinc-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors"
+            />
+            <div className="text-xs text-zinc-600 mt-1">times you need to do it</div>
+          </div>
+          <div>
+            <label className="block text-xs text-zinc-400 font-medium mb-1.5">Duration (days)</label>
+            <input
+              type="number"
+              min={1}
+              max={365}
+              value={duration}
+              onChange={(e) => setDuration(Number(e.target.value))}
+              className="w-full bg-zinc-900 border border-zinc-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors"
+            />
+            <div className="text-xs text-zinc-600 mt-1">ends {addDays(duration)}</div>
+          </div>
+        </div>
+
+        {/* Stake */}
+        <div>
+          <label className="block text-xs text-zinc-400 font-medium mb-2">
+            Stake — <span className="text-amber-400">${stake.toLocaleString()}</span>
+          </label>
+          <input
+            type="range"
+            min={50}
+            max={2000}
+            step={50}
+            value={stake}
+            onChange={(e) => setStake(Number(e.target.value))}
+            className="w-full accent-amber-500"
+          />
+          <div className="flex justify-between text-xs text-zinc-600 mt-1">
+            <span>$50</span>
+            <span>$2,000</span>
+          </div>
+        </div>
+
+        {/* Preview card */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+          <div className="text-xs text-zinc-500 mb-3">Bet preview</div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{emoji}</span>
+              <div>
+                <div className="font-semibold text-sm">{title || "Your bet"}</div>
+                <div className="text-xs text-zinc-500">{targetCheckins}x in {duration} days</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="font-black text-lg text-amber-400 bankroll-number">${stake.toLocaleString()}</div>
+              <div className="text-xs text-zinc-600">at stake</div>
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 font-black py-4 rounded-2xl transition-colors text-base"
+        >
+          {loading ? "Placing bet..." : `Bet $${stake.toLocaleString()} on yourself`}
+        </button>
+      </form>
+    </div>
+  );
+}
