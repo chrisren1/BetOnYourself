@@ -1,8 +1,9 @@
 import { redirect, notFound } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import CheckInButton from "./CheckInButton";
 import SettleButton from "./SettleButton";
-import { CheckCircle, Circle, Calendar, Target, Trophy, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Circle, Calendar, Target, Trophy, XCircle } from "lucide-react";
 import { Bet, Checkin } from "@/lib/types";
 
 function formatDate(d: string) {
@@ -65,6 +66,15 @@ export default async function BetDetailPage({ params }: { params: { id: string }
 
   return (
     <div className="max-w-2xl mx-auto px-4 pt-20 pb-24">
+      {/* Back */}
+      <Link
+        href="/"
+        className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors mt-2"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </Link>
+
       {/* Header */}
       <div className="mt-4 mb-6">
         <div className="flex items-start justify-between">
