@@ -4,17 +4,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { settleBet } from "@/actions/bets";
 import { Gavel } from "lucide-react";
+import { GoalType } from "@/lib/types";
 
 export default function SettleButton({
   betId,
   canSettle,
   checkinCount,
   targetCheckins,
+  goalType,
 }: {
   betId: string;
   canSettle: boolean;
   checkinCount: number;
   targetCheckins: number;
+  goalType: GoalType;
 }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -32,7 +35,9 @@ export default function SettleButton({
   if (!canSettle) {
     return (
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 text-xs text-zinc-500 text-center">
-        Bet settles when it ends or you hit {targetCheckins} check-ins ({checkinCount}/{targetCheckins} so far)
+        {goalType === "at_most"
+          ? `Bet settles when it ends or you go over ${targetCheckins} (${checkinCount}/${targetCheckins} so far)`
+          : `Bet settles when it ends or you hit ${targetCheckins} check-ins (${checkinCount}/${targetCheckins} so far)`}
       </div>
     );
   }

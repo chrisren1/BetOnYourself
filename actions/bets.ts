@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { BetCategory } from "@/lib/types";
+import { BetCategory, GoalType } from "@/lib/types";
 
 export type CreateBetInput = {
   title: string;
@@ -11,6 +11,7 @@ export type CreateBetInput = {
   emoji: string;
   stake: number;
   target_checkins: number;
+  goal_type: GoalType;
   end_date: string;
 };
 
@@ -27,6 +28,7 @@ export async function createBet(input: CreateBetInput) {
     emoji: input.emoji,
     stake: input.stake,
     target_checkins: input.target_checkins,
+    goal_type: input.goal_type,
     end_date: input.end_date,
     start_date: new Date().toISOString().split("T")[0],
     status: "active",
@@ -61,7 +63,9 @@ export async function settleBet(betId: string) {
     .eq("completed", true);
 
   const checkinCount = count ?? 0;
-  const won = checkinCount >= bet.target_checkins;
+  const won = bet.goal_type === "at_most"
+    ? checkinCount <= bet.target_checkins
+    : checkinCount >= bet.target_checkins;
   const newStatus = won ? "won" : "lost";
   const bankrollChange = won ? bet.stake : -bet.stake;
 

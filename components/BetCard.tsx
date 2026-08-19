@@ -13,8 +13,10 @@ function daysLeft(endDate: string): number {
 
 export default function BetCard({ bet }: { bet: Bet }) {
   const checkinCount = bet.checkin_count ?? 0;
+  const isAtMost = bet.goal_type === "at_most";
   const progress = Math.min(checkinCount / bet.target_checkins, 1);
   const progressPct = Math.round(progress * 100);
+  const overLimit = isAtMost && checkinCount > bet.target_checkins;
   const remaining = daysLeft(bet.end_date);
   const isActive = bet.status === "active";
 
@@ -76,6 +78,12 @@ export default function BetCard({ bet }: { bet: Bet }) {
                   ? "bg-green-500"
                   : bet.status === "lost"
                   ? "bg-red-500"
+                  : isAtMost
+                  ? overLimit
+                    ? "bg-red-500"
+                    : progressPct >= 75
+                    ? "bg-amber-500"
+                    : "bg-green-500"
                   : progressPct >= 75
                   ? "bg-green-500"
                   : progressPct >= 40
@@ -90,7 +98,7 @@ export default function BetCard({ bet }: { bet: Bet }) {
         <div className="flex items-center justify-between text-xs text-zinc-500">
           <div className="flex items-center gap-1">
             <CheckCircle className="w-3.5 h-3.5" />
-            <span>{checkinCount}/{bet.target_checkins} check-ins</span>
+            <span>{checkinCount}/{bet.target_checkins}{isAtMost ? " max" : " check-ins"}</span>
           </div>
           {isActive ? (
             <div className="flex items-center gap-1">

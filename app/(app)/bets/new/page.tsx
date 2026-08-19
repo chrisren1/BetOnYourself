@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBet } from "@/actions/bets";
-import { BetCategory, CATEGORY_CONFIG } from "@/lib/types";
+import { BetCategory, GoalType, CATEGORY_CONFIG } from "@/lib/types";
 
 const QUICK_BETS = [
-  { title: "Go to the gym", category: "fitness" as BetCategory, emoji: "🏋️", target: 4, duration: 7 },
-  { title: "Get 7+ hours of sleep", category: "sleep" as BetCategory, emoji: "😴", target: 5, duration: 7 },
-  { title: "Cook at home", category: "food" as BetCategory, emoji: "🍳", target: 4, duration: 7 },
-  { title: "Deep work sessions", category: "work" as BetCategory, emoji: "💻", target: 5, duration: 7 },
-  { title: "No drinking", category: "social" as BetCategory, emoji: "🚫🍺", target: 7, duration: 7 },
+  { title: "Go to the gym", category: "fitness" as BetCategory, emoji: "🏋️", target: 4, duration: 7, goalType: "at_least" as GoalType },
+  { title: "Get 7+ hours of sleep", category: "sleep" as BetCategory, emoji: "😴", target: 5, duration: 7, goalType: "at_least" as GoalType },
+  { title: "Cook at home", category: "food" as BetCategory, emoji: "🍳", target: 4, duration: 7, goalType: "at_least" as GoalType },
+  { title: "Deep work sessions", category: "work" as BetCategory, emoji: "💻", target: 5, duration: 7, goalType: "at_least" as GoalType },
+  { title: "No drinking", category: "social" as BetCategory, emoji: "🚫🍺", target: 7, duration: 7, goalType: "at_least" as GoalType },
+  { title: "Limit drinking", category: "social" as BetCategory, emoji: "🍺", target: 2, duration: 7, goalType: "at_most" as GoalType },
 ];
 
 function addDays(days: number): string {
@@ -48,6 +49,7 @@ export default function NewBetPage() {
   const [stake, setStake] = useState(300);
   const [targetCheckins, setTargetCheckins] = useState(4);
   const [duration, setDuration] = useState(7);
+  const [goalType, setGoalType] = useState<GoalType>("at_least");
 
   function applyQuickBet(qb: typeof QUICK_BETS[0]) {
     setTitle(qb.title);
@@ -55,6 +57,7 @@ export default function NewBetPage() {
     setEmoji(qb.emoji);
     setTargetCheckins(qb.target);
     setDuration(qb.duration);
+    setGoalType(qb.goalType);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -70,6 +73,7 @@ export default function NewBetPage() {
       emoji,
       stake,
       target_checkins: targetCheckins,
+      goal_type: goalType,
       end_date: addDays(duration),
     });
 
@@ -145,11 +149,37 @@ export default function NewBetPage() {
           />
         </div>
 
+        {/* Goal type */}
+        <div>
+          <label className="block text-xs text-zinc-400 font-medium mb-2">Goal type</label>
+          <div className="flex bg-zinc-900 border border-zinc-800 rounded-xl p-1">
+            {(
+              [
+                { value: "at_least" as GoalType, label: "Hit a target", hint: "e.g. gym 4x+" },
+                { value: "at_most" as GoalType, label: "Stay under a limit", hint: "e.g. drink ≤2x" },
+              ]
+            ).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setGoalType(opt.value)}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  goalType === opt.value
+                    ? "bg-zinc-800 text-amber-400"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Target check-ins + Duration */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs text-zinc-400 font-medium mb-1.5">
-              Target check-ins
+              {goalType === "at_most" ? "Max allowed" : "Target check-ins"}
             </label>
             <input
               type="number"
@@ -159,7 +189,9 @@ export default function NewBetPage() {
               onChange={(e) => setTargetCheckins(Number(e.target.value))}
               className="w-full bg-zinc-900 border border-zinc-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors"
             />
-            <div className="text-xs text-zinc-600 mt-1">times you need to do it</div>
+            <div className="text-xs text-zinc-600 mt-1">
+              {goalType === "at_most" ? "the most times you can do it" : "times you need to do it"}
+            </div>
           </div>
           <div>
             <label className="block text-xs text-zinc-400 font-medium mb-1.5">Duration (days)</label>
@@ -219,7 +251,9 @@ export default function NewBetPage() {
               <span className="text-2xl">{emoji}</span>
               <div>
                 <div className="font-semibold text-sm">{title || "Your bet"}</div>
-                <div className="text-xs text-zinc-500">{targetCheckins}x in {duration} days</div>
+                <div className="text-xs text-zinc-500">
+                  {goalType === "at_most" ? `${targetCheckins}x or less` : `${targetCheckins}x+`} in {duration} days
+                </div>
               </div>
             </div>
             <div className="text-right">

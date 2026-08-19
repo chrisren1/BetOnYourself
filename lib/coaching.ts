@@ -20,11 +20,13 @@ export function generateCoachingSummary(input: CoachingInput): string {
   const gain = bankroll - startingBankroll;
   const gainSign = gain >= 0 ? "+" : "";
 
-  // Check-in completion on active bets
+  // Check-in completion on active bets. For "at_most" bets, staying low is
+  // good, so the on-track score is inverted relative to raw check-in count.
   const activeSummaries = activeBets.map((b) => {
     const done = b.checkin_count ?? 0;
-    const pctDone = Math.round((done / b.target_checkins) * 100);
-    return { title: b.title, emoji: b.emoji, pctDone, done, target: b.target_checkins };
+    const rawPct = Math.round((done / b.target_checkins) * 100);
+    const onTrackPct = b.goal_type === "at_most" ? Math.max(0, 100 - rawPct) : rawPct;
+    return { title: b.title, emoji: b.emoji, pctDone: onTrackPct, done, target: b.target_checkins };
   });
 
   const lagging = activeSummaries.filter((b) => b.pctDone < 50);

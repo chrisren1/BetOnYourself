@@ -35,6 +35,8 @@ CREATE TABLE bets (
   emoji            TEXT NOT NULL DEFAULT '🎯',
   stake            NUMERIC NOT NULL,
   target_checkins  INTEGER NOT NULL,               -- e.g. 4 (go to gym 4x)
+  goal_type        TEXT NOT NULL DEFAULT 'at_least' CHECK (goal_type IN ('at_least', 'at_most')),
+                                                    -- at_least: hit target_checkins+ to win. at_most: stay at/under target_checkins to win.
   start_date       DATE NOT NULL DEFAULT CURRENT_DATE,
   end_date         DATE NOT NULL,
   status           TEXT NOT NULL DEFAULT 'active', -- active, won, lost

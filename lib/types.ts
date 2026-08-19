@@ -8,6 +8,10 @@ export type Profile = {
 export type BetCategory = "fitness" | "sleep" | "food" | "work" | "social" | "other";
 export type BetStatus = "active" | "won" | "lost";
 
+// at_least = hit a threshold (e.g. gym 4x+ this week)
+// at_most  = stay under a threshold (e.g. drink 2x or less this week)
+export type GoalType = "at_least" | "at_most";
+
 export type Bet = {
   id: string;
   user_id: string;
@@ -17,6 +21,7 @@ export type Bet = {
   emoji: string;
   stake: number;
   target_checkins: number;
+  goal_type: GoalType;
   start_date: string;
   end_date: string;
   status: BetStatus;

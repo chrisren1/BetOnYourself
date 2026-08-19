@@ -44,8 +44,10 @@ export default async function BetDetailPage({ params }: { params: { id: string }
   const checkins: Checkin[] = checkinsRaw ?? [];
   const checkinDates = new Set(checkins.filter((c) => c.completed).map((c) => c.date));
   const checkinCount = checkinDates.size;
+  const isAtMost = bet.goal_type === "at_most";
   const progress = Math.min(checkinCount / bet.target_checkins, 1);
   const progressPct = Math.round(progress * 100);
+  const overLimit = isAtMost && checkinCount > bet.target_checkins;
 
   const today = new Date().toISOString().split("T")[0];
   const checkedInToday = checkinDates.has(today);
@@ -100,17 +102,21 @@ export default async function BetDetailPage({ params }: { params: { id: string }
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Target className="w-4 h-4 text-zinc-400" />
-            <span className="text-sm font-medium">Progress</span>
+            <span className="text-sm font-medium">{isAtMost ? "Usage" : "Progress"}</span>
           </div>
-          <span className="text-sm font-bold text-amber-400">{checkinCount}/{(bet as Bet).target_checkins}</span>
+          <span className={`text-sm font-bold ${overLimit ? "text-red-400" : "text-amber-400"}`}>
+            {checkinCount}/{(bet as Bet).target_checkins}{isAtMost ? " max" : ""}
+          </span>
         </div>
         <div className="h-3 bg-zinc-800 rounded-full overflow-hidden mb-2">
           <div
             className={`h-full rounded-full transition-all ${
               bet.status === "won" ? "bg-green-500" :
               bet.status === "lost" ? "bg-red-500" :
-              progressPct >= 75 ? "bg-green-500" :
-              progressPct >= 40 ? "bg-amber-500" : "bg-zinc-600"
+              isAtMost
+                ? overLimit ? "bg-red-500" : progressPct >= 75 ? "bg-amber-500" : "bg-green-500"
+                : progressPct >= 75 ? "bg-green-500" :
+                  progressPct >= 40 ? "bg-amber-500" : "bg-zinc-600"
             }`}
             style={{ width: `${progressPct}%` }}
           />
@@ -120,14 +126,20 @@ export default async function BetDetailPage({ params }: { params: { id: string }
             <Calendar className="w-3.5 h-3.5" />
             <span>{formatDate(bet.start_date)} → {formatDate(bet.end_date)}</span>
           </div>
-          <span>{progressPct}% complete</span>
+          <span>
+            {isAtMost
+              ? overLimit
+                ? "limit exceeded"
+                : `${(bet as Bet).target_checkins - checkinCount} left before you lose`
+              : `${progressPct}% complete`}
+          </span>
         </div>
       </div>
 
       {/* Check-in button (active bets only) */}
       {isActive && !isPastEndDate && (
         <div className="mb-5">
-          <CheckInButton betId={params.id} checkedInToday={checkedInToday} />
+          <CheckInButton betId={params.id} checkedInToday={checkedInToday} goalType={bet.goal_type} />
         </div>
       )}
 
@@ -136,9 +148,10 @@ export default async function BetDetailPage({ params }: { params: { id: string }
         <div className="mb-5">
           <SettleButton
             betId={params.id}
-            canSettle={isPastEndDate || checkinCount >= (bet as Bet).target_checkins}
+            canSettle={isPastEndDate || (isAtMost ? overLimit : checkinCount >= (bet as Bet).target_checkins)}
             checkinCount={checkinCount}
             targetCheckins={(bet as Bet).target_checkins}
+            goalType={bet.goal_type}
           />
         </div>
       )}
@@ -170,25 +183,31 @@ export default async function BetDetailPage({ params }: { params: { id: string }
 
       {/* Calendar view */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-        <div className="text-xs text-zinc-500 font-medium uppercase tracking-widest mb-4">Check-in Log</div>
+        <div className="text-xs text-zinc-500 font-medium uppercase tracking-widest mb-4">
+          {isAtMost ? "Slip Log" : "Check-in Log"}
+        </div>
         <div className="grid grid-cols-7 gap-1.5">
           {pastAndToday.map((date) => {
             const done = checkinDates.has(date);
             const isToday = date === today;
+            const doneClass = isAtMost
+              ? "bg-red-500/20 border border-red-500/30"
+              : "bg-green-500/20 border border-green-500/30";
+            const doneIconClass = isAtMost ? "text-red-400" : "text-green-400";
             return (
               <div
                 key={date}
                 title={date}
                 className={`aspect-square rounded-lg flex items-center justify-center text-xs relative ${
                   done
-                    ? "bg-green-500/20 border border-green-500/30"
+                    ? doneClass
                     : isToday
                     ? "bg-zinc-800 border border-amber-500/50"
                     : "bg-zinc-800/50 border border-zinc-800"
                 }`}
               >
                 {done ? (
-                  <CheckCircle className="w-4 h-4 text-green-400" />
+                  <CheckCircle className={`w-4 h-4 ${doneIconClass}`} />
                 ) : isToday ? (
                   <Circle className="w-4 h-4 text-amber-500" />
                 ) : (
@@ -208,8 +227,8 @@ export default async function BetDetailPage({ params }: { params: { id: string }
         </div>
         <div className="flex items-center gap-4 mt-4 text-xs text-zinc-500">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-green-500/20 border border-green-500/30" />
-            <span>Checked in</span>
+            <div className={`w-3 h-3 rounded ${isAtMost ? "bg-red-500/20 border border-red-500/30" : "bg-green-500/20 border border-green-500/30"}`} />
+            <span>{isAtMost ? "Logged" : "Checked in"}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-zinc-800 border border-amber-500/50" />
@@ -217,7 +236,7 @@ export default async function BetDetailPage({ params }: { params: { id: string }
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-zinc-800 border border-zinc-800" />
-            <span>Missed</span>
+            <span>{isAtMost ? "Clean day" : "Missed"}</span>
           </div>
         </div>
       </div>
