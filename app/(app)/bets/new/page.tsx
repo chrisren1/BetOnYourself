@@ -19,6 +19,23 @@ function addDays(days: number): string {
   return d.toISOString().split("T")[0];
 }
 
+function daysUntilEndOfWeek(): number {
+  const day = new Date().getDay(); // 0 = Sunday .. 6 = Saturday
+  return day === 0 ? 7 : 7 - day;
+}
+
+function formatShortDate(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "numeric", day: "numeric" });
+}
+
+const DURATION_PRESETS = [
+  { label: "3 days", days: 3 },
+  { label: "End of week", days: daysUntilEndOfWeek() },
+  { label: "1 week", days: 7 },
+  { label: "2 weeks", days: 14 },
+];
+
 export default function NewBetPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -154,7 +171,23 @@ export default function NewBetPage() {
               onChange={(e) => setDuration(Number(e.target.value))}
               className="w-full bg-zinc-900 border border-zinc-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors"
             />
-            <div className="text-xs text-zinc-600 mt-1">ends {addDays(duration)}</div>
+            <div className="flex gap-1.5 flex-wrap mt-2">
+              {DURATION_PRESETS.map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => setDuration(p.days)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    duration === p.days
+                      ? "bg-zinc-800 border-amber-500 text-amber-400"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <div className="text-xs text-zinc-600 mt-1.5">ends {formatShortDate(addDays(duration))}</div>
           </div>
         </div>
 
