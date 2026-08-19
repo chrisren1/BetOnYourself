@@ -6,6 +6,13 @@ import { Bet, BankrollHistory } from "@/lib/types";
 import { generateCoachingSummary, getWinRate } from "@/lib/coaching";
 import { Plus, Bot } from "lucide-react";
 
+function daysLeft(endDate: string): number {
+  const end = new Date(endDate);
+  const now = new Date();
+  const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.max(0, diff);
+}
+
 export default async function DashboardPage() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -59,6 +66,9 @@ export default async function DashboardPage() {
 
   const gain = profile.bankroll - 10000;
   const totalStaked = activeBets.reduce((sum: number, b: Bet) => sum + b.stake, 0);
+  const nearestDeadline = activeBets.length > 0
+    ? Math.min(...activeBets.map((b) => daysLeft(b.end_date)))
+    : null;
 
   const coachingMessage = generateCoachingSummary({
     username: profile.username,
@@ -72,23 +82,36 @@ export default async function DashboardPage() {
     <div className="max-w-2xl mx-auto px-4 pt-20 pb-24">
       {/* Bankroll hero */}
       <div className="bg-gradient-to-br from-zinc-900 to-zinc-900/50 border border-zinc-800 rounded-3xl p-6 mb-6">
-        <div className="text-xs text-zinc-500 font-medium uppercase tracking-widest mb-2">
-          Self-Betting Bankroll
+        <div className="text-xs text-zinc-500 font-medium uppercase tracking-widest mb-1.5">
+          Bankroll
         </div>
-        <div className={`text-5xl font-black bankroll-number mb-3 ${
-          profile.bankroll >= 10000 ? "text-amber-400" :
-          profile.bankroll >= 7000  ? "text-yellow-500" : "text-red-400"
-        }`}>
+        <div className="text-2xl font-bold bankroll-number text-zinc-300 mb-5">
           ${profile.bankroll.toLocaleString("en-US", { maximumFractionDigits: 0 })}
         </div>
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className={`text-sm font-bold ${gain >= 0 ? "text-green-400" : "text-red-400"}`}>
-            {gain >= 0 ? "+" : ""}${gain.toLocaleString()} all-time
-          </div>
-          <div className="w-px h-4 bg-zinc-700" />
-          <span className="text-sm text-zinc-400">{Math.round(winRate * 100)}% win rate</span>
-          <div className="w-px h-4 bg-zinc-700" />
-          <span className="text-sm text-zinc-400">${totalStaked.toLocaleString()} at stake</span>
+
+        {totalStaked > 0 ? (
+          <>
+            <div className="text-xs text-amber-500 font-semibold uppercase tracking-widest mb-1.5">
+              On The Line
+            </div>
+            <div className="text-5xl font-black bankroll-number text-amber-400 mb-2">
+              ${totalStaked.toLocaleString()}
+            </div>
+            <div className="text-sm text-zinc-400">
+              {activeBets.length} active {activeBets.length === 1 ? "bet" : "bets"}
+              {nearestDeadline !== null && ` · ${nearestDeadline}d remaining`}
+            </div>
+          </>
+        ) : (
+          <div className="text-sm text-zinc-500">Nothing on the line right now.</div>
+        )}
+
+        <div className="flex items-center gap-4 flex-wrap mt-5 pt-4 border-t border-zinc-800/70">
+          <span className="text-xs text-zinc-500">{Math.round(winRate * 100)}% promise rate</span>
+          <div className="w-px h-3 bg-zinc-700" />
+          <span className={`text-xs ${gain >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+            {gain >= 0 ? "+" : ""}${gain.toLocaleString()} lifetime
+          </span>
         </div>
       </div>
 

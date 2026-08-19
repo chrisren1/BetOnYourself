@@ -32,7 +32,7 @@ export function generateCoachingSummary(input: CoachingInput): string {
   const lagging = activeSummaries.filter((b) => b.pctDone < 50);
   const crushing = activeSummaries.filter((b) => b.pctDone >= 75);
 
-  // Nothing settled yet — a "0% win rate" stat is just noise for a brand
+  // Nothing settled yet — a "0% promise rate" stat is just noise for a brand
   // new account. Welcome them and point at what they've already committed to.
   const hasSettledHistory = recentHistory.some((h) => h.change !== 0);
   if (!hasSettledHistory) {
@@ -58,13 +58,13 @@ export function generateCoachingSummary(input: CoachingInput): string {
   let msg = "";
 
   if (pct >= 80) {
-    msg += `You're on fire, ${name}. ${pct}% win rate — you're one of those rare people who actually does what they say they'll do. `;
+    msg += `You're on fire, ${name}. ${pct}% promise rate — you're one of those rare people who actually does what they say they'll do. `;
   } else if (pct >= 60) {
-    msg += `Solid work, ${name}. ${pct}% win rate puts you well above average. `;
+    msg += `Solid work, ${name}. ${pct}% promise rate puts you well above average. `;
   } else if (pct >= 40) {
     msg += `You're at ${pct}% — room to grow, ${name}. The data doesn't lie, but neither does the trend. `;
   } else {
-    msg += `${pct}% win rate, ${name}. Rough patch — but you're showing up, which is more than most people do. `;
+    msg += `${pct}% promise rate, ${name}. Rough patch — but you're showing up, which is more than most people do. `;
   }
 
   if (gain > 0) {
