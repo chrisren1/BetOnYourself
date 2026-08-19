@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { createBet } from "@/actions/bets";
 import { BetCategory, GoalType, CATEGORY_CONFIG } from "@/lib/types";
 
@@ -84,6 +86,14 @@ export default function NewBetPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 pt-20 pb-24">
+      <Link
+        href="/"
+        className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors mt-2"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </Link>
+
       <h1 className="font-black text-2xl mb-1 mt-4">Place a Bet</h1>
       <p className="text-sm text-zinc-500 mb-6">Make a commitment. Put your bankroll on it.</p>
 

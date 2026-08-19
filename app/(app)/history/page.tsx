@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BankrollHistory } from "@/lib/types";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowLeft } from "lucide-react";
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -33,6 +34,14 @@ export default async function HistoryPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 pt-20 pb-24">
+      <Link
+        href="/"
+        className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors mt-2"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </Link>
+
       <h1 className="font-black text-2xl mt-4 mb-1">Bankroll History</h1>
       <p className="text-sm text-zinc-500 mb-6">Your complete betting record</p>
 

@@ -12,6 +12,35 @@ type CoachingInput = {
   winRate: number; // 0–1
 };
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+// Judges progress against how much of the bet's window has actually
+// elapsed, not raw checkin_count/target_checkins. A bet that's 1/4 done
+// on day 1 of 7 is ahead of pace, not behind — you can't check in for
+// days that haven't happened yet.
+function computeBetPace(b: Bet): { crushing: boolean; lagging: boolean } {
+  const done = b.checkin_count ?? 0;
+  const target = b.target_checkins;
+  const totalDays = Math.max(1, Math.round((new Date(b.end_date).getTime() - new Date(b.start_date).getTime()) / MS_PER_DAY) + 1);
+  const elapsedDays = Math.min(
+    totalDays,
+    Math.max(1, Math.round((new Date().getTime() - new Date(b.start_date).getTime()) / MS_PER_DAY) + 1)
+  );
+  const expectedByNow = (target * elapsedDays) / totalDays;
+
+  if (b.goal_type === "at_most") {
+    const overLimit = done > target;
+    const lagging = overLimit || done > expectedByNow * 1.2;
+    const crushing = !lagging && (done === 0 || done <= expectedByNow * 0.5);
+    return { crushing, lagging };
+  }
+
+  const hitTarget = done >= target;
+  const crushing = hitTarget || done >= expectedByNow * 1.5;
+  const lagging = !hitTarget && done < expectedByNow * 0.5;
+  return { crushing, lagging };
+}
+
 export function generateCoachingSummary(input: CoachingInput): string {
   const { username, bankroll, activeBets, recentHistory, winRate } = input;
   const name = username ?? "champ";
@@ -20,17 +49,14 @@ export function generateCoachingSummary(input: CoachingInput): string {
   const gain = bankroll - startingBankroll;
   const gainSign = gain >= 0 ? "+" : "";
 
-  // Check-in completion on active bets. For "at_most" bets, staying low is
-  // good, so the on-track score is inverted relative to raw check-in count.
-  const activeSummaries = activeBets.map((b) => {
-    const done = b.checkin_count ?? 0;
-    const rawPct = Math.round((done / b.target_checkins) * 100);
-    const onTrackPct = b.goal_type === "at_most" ? Math.max(0, 100 - rawPct) : rawPct;
-    return { title: b.title, emoji: b.emoji, pctDone: onTrackPct, done, target: b.target_checkins };
-  });
+  const activeSummaries = activeBets.map((b) => ({
+    title: b.title,
+    emoji: b.emoji,
+    ...computeBetPace(b),
+  }));
 
-  const lagging = activeSummaries.filter((b) => b.pctDone < 50);
-  const crushing = activeSummaries.filter((b) => b.pctDone >= 75);
+  const lagging = activeSummaries.filter((b) => b.lagging);
+  const crushing = activeSummaries.filter((b) => b.crushing);
 
   // Nothing settled yet — a "0% promise rate" stat is just noise for a brand
   // new account. Welcome them and point at what they've already committed to.
