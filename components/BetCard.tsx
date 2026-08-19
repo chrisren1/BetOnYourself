@@ -89,7 +89,7 @@ export default function BetCard({ bet }: { bet: Bet }) {
                     : "bg-gradient-to-r from-orange-500 to-orange-400"
                   : progressPct >= 75
                   ? "bg-gradient-to-r from-emerald-500 to-emerald-400"
-                  : progressPct >= 40
+                  : progressPct > 0
                   ? "bg-amber-500"
                   : "bg-zinc-600"
               }`}

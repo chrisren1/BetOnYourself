@@ -123,7 +123,7 @@ export default async function BetDetailPage({ params }: { params: { id: string }
                   ? "bg-gradient-to-r from-orange-600 to-orange-500"
                   : "bg-gradient-to-r from-orange-500 to-orange-400"
                 : progressPct >= 75 ? "bg-gradient-to-r from-emerald-500 to-emerald-400" :
-                  progressPct >= 40 ? "bg-amber-500" : "bg-zinc-600"
+                  progressPct > 0 ? "bg-amber-500" : "bg-zinc-600"
             }`}
             style={{ width: `${progressPct}%` }}
           />
