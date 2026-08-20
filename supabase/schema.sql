@@ -40,8 +40,13 @@ CREATE TABLE bets (
   start_date       DATE NOT NULL DEFAULT CURRENT_DATE,
   end_date         DATE NOT NULL,
   status           TEXT NOT NULL DEFAULT 'active', -- active, won, lost
-  created_at       TIMESTAMPTZ DEFAULT NOW()
+  created_at       TIMESTAMPTZ DEFAULT NOW(),
+  witness_token    UUID,                           -- set when a shareable witness link is generated
+  witness_verdict  BOOLEAN,                         -- witness's yes/no on whether the bet held up
+  witness_voted_at TIMESTAMPTZ
 );
+
+CREATE UNIQUE INDEX bets_witness_token_idx ON bets (witness_token) WHERE witness_token IS NOT NULL;
 
 -- Daily check-ins per bet
 CREATE TABLE checkins (
@@ -85,3 +90,79 @@ CREATE POLICY "Users manage own checkins"
 
 CREATE POLICY "Users view own bankroll history"
   ON bankroll_history FOR ALL USING (auth.uid() = user_id);
+
+-- ============================================================
+-- Witness verification — a friend can confirm/deny a bet via a
+-- shareable link with no account needed. Reads and writes go through
+-- SECURITY DEFINER functions rather than a relaxed RLS policy, so
+-- knowing the exact token — not row visibility — is what grants access.
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION get_witness_bet(p_token UUID)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_bet RECORD;
+BEGIN
+  SELECT title, emoji, description, category, goal_type, target_checkins, stake, status, witness_verdict, witness_voted_at
+  INTO v_bet
+  FROM bets
+  WHERE witness_token = p_token;
+
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+
+  RETURN row_to_json(v_bet);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_witness_bet(UUID) TO anon, authenticated;
+
+-- Records the witness's yes/no and writes (or clears) today's check-in to
+-- match: at_least bets, "yes" logs a check-in; at_most bets, "yes" (stayed
+-- under) logs nothing and "no" (broke it) logs an occurrence.
+CREATE OR REPLACE FUNCTION submit_witness_verdict(p_token UUID, p_success BOOLEAN)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_bet RECORD;
+  v_today DATE := CURRENT_DATE;
+  v_should_checkin BOOLEAN;
+BEGIN
+  SELECT * INTO v_bet FROM bets WHERE witness_token = p_token;
+
+  IF NOT FOUND THEN
+    RETURN json_build_object('error', 'invalid_token');
+  END IF;
+
+  IF v_bet.status <> 'active' THEN
+    RETURN json_build_object('error', 'already_settled');
+  END IF;
+
+  UPDATE bets
+  SET witness_verdict = p_success, witness_voted_at = NOW()
+  WHERE id = v_bet.id;
+
+  v_should_checkin := (v_bet.goal_type = 'at_least' AND p_success)
+                    OR (v_bet.goal_type = 'at_most' AND NOT p_success);
+
+  IF v_should_checkin THEN
+    INSERT INTO checkins (bet_id, user_id, date, completed, note)
+    VALUES (v_bet.id, v_bet.user_id, v_today, TRUE, 'Confirmed by witness')
+    ON CONFLICT (bet_id, date) DO UPDATE SET completed = TRUE, note = 'Confirmed by witness';
+  ELSE
+    DELETE FROM checkins WHERE bet_id = v_bet.id AND date = v_today;
+  END IF;
+
+  RETURN json_build_object('success', true, 'title', v_bet.title);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION submit_witness_verdict(UUID, BOOLEAN) TO anon, authenticated;

@@ -26,9 +26,25 @@ export type Bet = {
   end_date: string;
   status: BetStatus;
   created_at: string;
+  witness_token: string | null;
+  witness_verdict: boolean | null;
+  witness_voted_at: string | null;
   // joined
   checkins?: Checkin[];
   checkin_count?: number;
+};
+
+export type WitnessBet = {
+  title: string;
+  emoji: string;
+  description: string | null;
+  category: BetCategory;
+  goal_type: GoalType;
+  target_checkins: number;
+  stake: number;
+  status: BetStatus;
+  witness_verdict: boolean | null;
+  witness_voted_at: string | null;
 };
 
 export type Checkin = {

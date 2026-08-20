@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import CheckInButton from "./CheckInButton";
 import SettleButton from "./SettleButton";
 import CategoryEditor from "./CategoryEditor";
+import WitnessShare from "./WitnessShare";
 import { ArrowLeft, CheckCircle, Circle, Calendar, Target, Trophy, XCircle, Bot } from "lucide-react";
 import { Bet, Checkin, CATEGORY_CONFIG } from "@/lib/types";
 import { generateBetCoachMessage } from "@/lib/coaching";
@@ -161,6 +162,11 @@ export default async function BetDetailPage({ params }: { params: { id: string }
           </div>
         </div>
       </div>
+
+      {/* Witness (active bets only) */}
+      {isActive && (
+        <WitnessShare betId={params.id} witnessToken={bet.witness_token} witnessVerdict={bet.witness_verdict} />
+      )}
 
       {/* Check-in button (active bets only) */}
       {isActive && !isPastEndDate && (
