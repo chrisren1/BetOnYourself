@@ -39,6 +39,23 @@ export async function createBet(input: CreateBetInput) {
   return { success: true };
 }
 
+export async function updateBetCategory(betId: string, category: BetCategory, emoji: string) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("bets")
+    .update({ category, emoji })
+    .eq("id", betId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: error.message };
+  revalidatePath(`/bets/${betId}`);
+  revalidatePath("/");
+  return { success: true };
+}
+
 export async function settleBet(betId: string) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();

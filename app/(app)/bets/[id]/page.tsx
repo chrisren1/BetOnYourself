@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import CheckInButton from "./CheckInButton";
 import SettleButton from "./SettleButton";
+import CategoryEditor from "./CategoryEditor";
 import { ArrowLeft, CheckCircle, Circle, Calendar, Target, Trophy, XCircle, Bot } from "lucide-react";
 import { Bet, Checkin, CATEGORY_CONFIG } from "@/lib/types";
 import { generateBetCoachMessage } from "@/lib/coaching";
@@ -66,7 +67,6 @@ export default async function BetDetailPage({ params }: { params: { id: string }
   };
 
   const sc = statusConfig[bet.status as keyof typeof statusConfig];
-  const cat = CATEGORY_CONFIG[bet.category as keyof typeof CATEGORY_CONFIG];
   const coachMessage = generateBetCoachMessage({
     bet,
     checkinCount,
@@ -90,9 +90,7 @@ export default async function BetDetailPage({ params }: { params: { id: string }
       <div className="mt-4 mb-6">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
-            <span className={`w-14 h-14 shrink-0 rounded-2xl border flex items-center justify-center text-3xl ${cat.badge}`}>
-              {bet.emoji}
-            </span>
+            <CategoryEditor betId={params.id} category={bet.category as keyof typeof CATEGORY_CONFIG} emoji={bet.emoji} />
             <div>
               <h1 className="font-black text-xl leading-tight">{bet.title}</h1>
               {bet.description && (

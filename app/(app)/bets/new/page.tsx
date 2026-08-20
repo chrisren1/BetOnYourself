@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { createBet } from "@/actions/bets";
+import { suggestCategory } from "@/actions/ai";
 import { BetCategory, GoalType, CATEGORY_CONFIG } from "@/lib/types";
 
 const QUICK_BETS = [
@@ -53,6 +54,25 @@ export default function NewBetPage() {
   const [targetCheckins, setTargetCheckins] = useState(4);
   const [duration, setDuration] = useState(7);
   const [goalType, setGoalType] = useState<GoalType>("at_least");
+  const [categoryTouched, setCategoryTouched] = useState(false);
+  const [detectingCategory, setDetectingCategory] = useState(false);
+
+  // Auto-detect category from the title via Claude, unless the user has
+  // already picked one manually — never override a deliberate choice.
+  useEffect(() => {
+    if (categoryTouched || title.trim().length < 3) return;
+    const handle = setTimeout(async () => {
+      setDetectingCategory(true);
+      const suggested = await suggestCategory(title);
+      setDetectingCategory(false);
+      if (suggested && !categoryTouched) {
+        setCategory(suggested);
+        setEmoji(CATEGORY_CONFIG[suggested].emoji);
+      }
+    }, 700);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title]);
 
   // Check-ins are capped at one per day, so the target can never exceed the
   // number of days in the bet — otherwise it'd be mathematically unwinnable
@@ -65,6 +85,7 @@ export default function NewBetPage() {
   function applyQuickBet(qb: typeof QUICK_BETS[0]) {
     setTitle(qb.title);
     setCategory(qb.category);
+    setCategoryTouched(true);
     setEmoji(qb.emoji);
     setTargetCheckins(qb.target);
     setDuration(qb.duration);
@@ -126,13 +147,21 @@ export default function NewBetPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Category */}
         <div>
-          <label className="block text-xs text-zinc-400 font-medium mb-2">Category</label>
+          <label className="flex items-center gap-1.5 text-xs text-zinc-400 font-medium mb-2">
+            Category
+            {detectingCategory && (
+              <span className="flex items-center gap-1 text-amber-500/80 normal-case font-normal">
+                <Sparkles className="w-3 h-3 animate-pulse" />
+                detecting from title…
+              </span>
+            )}
+          </label>
           <div className="flex gap-2 flex-wrap">
             {(Object.entries(CATEGORY_CONFIG) as [BetCategory, typeof CATEGORY_CONFIG[BetCategory]][]).map(([cat, cfg]) => (
               <button
                 key={cat}
                 type="button"
-                onClick={() => { setCategory(cat); setEmoji(cfg.emoji); }}
+                onClick={() => { setCategory(cat); setEmoji(cfg.emoji); setCategoryTouched(true); }}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
                   category === cat
                     ? `${cfg.badge} ${cfg.color}`
