@@ -80,6 +80,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 pt-20 pb-24">
+      {/* Tagline */}
+      <p className="text-xs text-zinc-500 font-medium tracking-wide -mt-1 mb-4">
+        Put your money where your goals are.
+      </p>
+
       {/* Bankroll hero */}
       <div className="bg-gradient-to-br from-zinc-900 to-zinc-900/50 border border-zinc-800 rounded-3xl p-6 mb-6">
         <div className="text-xs text-zinc-500 font-medium uppercase tracking-widest mb-1.5">

@@ -34,7 +34,7 @@ export default function LoginPage() {
           </div>
           <div>
             <div className="font-bold text-lg leading-tight">Bet On Yourself</div>
-            <div className="text-xs text-zinc-500">Your bankroll. Your promises.</div>
+            <div className="text-xs text-zinc-500">Put your money where your goals are.</div>
           </div>
         </div>
 

@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Bet On Yourself",
-  description: "The accountability app where you bet on yourself.",
+  description: "Put your money where your goals are.",
 };
 
 export default function RootLayout({
