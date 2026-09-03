@@ -76,10 +76,15 @@ export default function NewBetPage() {
 
   // Check-ins are capped at one per day, so the target can never exceed the
   // number of days in the bet — otherwise it'd be mathematically unwinnable
-  // (e.g. a same-day bet with a target of 4 check-ins).
+  // (e.g. a same-day bet with a target of 4 check-ins). For at_most bets,
+  // 0 is a valid and common target ("no drinking at all this week"), so
+  // only at_least bets get floored at 1.
   function applyDuration(days: number) {
     setDuration(days);
-    setTargetCheckins((prev) => Math.max(1, Math.min(prev, days + 1)));
+    setTargetCheckins((prev) => {
+      const min = goalType === "at_most" ? 0 : 1;
+      return Math.max(min, Math.min(prev, days + 1));
+    });
   }
 
   function applyQuickBet(qb: typeof QUICK_BETS[0]) {
@@ -210,7 +215,12 @@ export default function NewBetPage() {
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => setGoalType(opt.value)}
+                onClick={() => {
+                  setGoalType(opt.value);
+                  if (opt.value === "at_least") {
+                    setTargetCheckins((prev) => Math.max(1, prev));
+                  }
+                }}
                 className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   goalType === opt.value
                     ? opt.value === "at_most"
@@ -233,14 +243,21 @@ export default function NewBetPage() {
             </label>
             <input
               type="number"
-              min={1}
+              min={goalType === "at_most" ? 0 : 1}
               max={31}
               value={targetCheckins}
-              onChange={(e) => setTargetCheckins(Number(e.target.value))}
+              onChange={(e) => {
+                const min = goalType === "at_most" ? 0 : 1;
+                setTargetCheckins(Math.max(min, Number(e.target.value)));
+              }}
               className="w-full bg-zinc-900 border border-zinc-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors"
             />
             <div className="text-xs text-zinc-600 mt-1">
-              {goalType === "at_most" ? "the most times you can do it" : "times you need to do it"}
+              {goalType === "at_most"
+                ? targetCheckins === 0
+                  ? "zero — none allowed at all"
+                  : "the most times you can do it"
+                : "times you need to do it"}
             </div>
           </div>
           <div>

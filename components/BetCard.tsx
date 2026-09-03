@@ -14,7 +14,11 @@ function daysLeft(endDate: string): number {
 export default function BetCard({ bet }: { bet: Bet }) {
   const checkinCount = bet.checkin_count ?? 0;
   const isAtMost = bet.goal_type === "at_most";
-  const progress = Math.min(checkinCount / bet.target_checkins, 1);
+  // target_checkins can be 0 for an at_most bet ("none at all this week"),
+  // so guard the division — any occurrence against a 0 allowance is a full bar.
+  const progress = bet.target_checkins > 0
+    ? Math.min(checkinCount / bet.target_checkins, 1)
+    : checkinCount > 0 ? 1 : 0;
   const progressPct = Math.round(progress * 100);
   const overLimit = isAtMost && checkinCount > bet.target_checkins;
   const remaining = daysLeft(bet.end_date);
